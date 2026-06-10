@@ -78,7 +78,7 @@ jobs:
             pkg.dependencies = stripWorkspace(pkg.dependencies);
             pkg.devDependencies = stripWorkspace(pkg.devDependencies);
             fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
-            console.log('catalog: references resolved, @workspace/* packages removed.');
+            console.log('Done - catalog: resolved, @workspace/* removed.');
           "
 
       - name: Remove pnpm workspace config
@@ -92,18 +92,41 @@ jobs:
         run: pnpm run build
         working-directory: artifacts/signcentro
 
-      - name: Debug - List build output
+      - name: Debug - Find build output
         run: |
-          echo "=== Checking dist folder ==="
-          ls -la artifacts/signcentro/dist/ || echo "dist/ not found"
-          echo "=== Contents ==="
-          find artifacts/signcentro/dist -type f | head -30
+          echo "=== All index.html files in repo ==="
+          find . -name "index.html" -not -path "*/node_modules/*"
+          echo ""
+          echo "=== All dist/ directories ==="
+          find . -name "dist" -type d -not -path "*/node_modules/*"
+          echo ""
+          echo "=== signcentro root listing ==="
+          ls -la artifacts/signcentro/
+          echo ""
+          echo "=== signcentro/dist (if exists) ==="
+          ls -la artifacts/signcentro/dist/ 2>/dev/null || echo "No dist/ folder found"
+          echo ""
+          echo "=== vite.config outDir check ==="
+          grep -i "outDir\|out_dir\|build" artifacts/signcentro/vite.config.ts || echo "No custom outDir found"
 
-      - name: Copy build output to clean deploy folder
+      - name: Copy build output to deploy folder
         run: |
+          BUILD_DIR=""
+          if [ -f "artifacts/signcentro/dist/index.html" ]; then
+            BUILD_DIR="artifacts/signcentro/dist"
+          elif [ -f "artifacts/signcentro/build/index.html" ]; then
+            BUILD_DIR="artifacts/signcentro/build"
+          elif [ -f "artifacts/signcentro/out/index.html" ]; then
+            BUILD_DIR="artifacts/signcentro/out"
+          else
+            echo "ERROR: Could not find index.html in any known output directory"
+            find artifacts/signcentro -name "index.html" -not -path "*/node_modules/*"
+            exit 1
+          fi
+          echo "Found build output at: $BUILD_DIR"
           mkdir -p deploy
-          cp -r artifacts/signcentro/dist/. deploy/
-          echo "=== Deploy folder contents ==="
+          cp -r "$BUILD_DIR/." deploy/
+          echo "=== Deploy folder ==="
           ls -la deploy/
 
       - name: Install OIDC Client
