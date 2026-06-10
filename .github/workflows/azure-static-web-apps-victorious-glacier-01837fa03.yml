@@ -92,10 +92,19 @@ jobs:
         run: pnpm run build
         working-directory: artifacts/signcentro
 
+      - name: Debug - List build output
+        run: |
+          echo "=== Checking dist folder ==="
+          ls -la artifacts/signcentro/dist/ || echo "dist/ not found"
+          echo "=== Contents ==="
+          find artifacts/signcentro/dist -type f | head -30
+
       - name: Copy build output to clean deploy folder
         run: |
           mkdir -p deploy
-          cp -r artifacts/signcentro/dist/* deploy/
+          cp -r artifacts/signcentro/dist/. deploy/
+          echo "=== Deploy folder contents ==="
+          ls -la deploy/
 
       - name: Install OIDC Client
         run: npm install @actions/core@1.6.0 @actions/http-client
