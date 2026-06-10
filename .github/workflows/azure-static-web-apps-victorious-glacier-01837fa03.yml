@@ -64,21 +64,21 @@ jobs:
             const resolve = (deps) => {
               if (!deps) return deps;
               return Object.fromEntries(
-                Object.entries(deps).map(([k, v]) => [k, v === 'catalog:' ? catalog[k] || 'latest' : v])
+                Object.entries(deps).map(([k, v]) => [k, v === 'catalog:' ? (catalog[k] || 'latest') : v])
               );
             };
             pkg.dependencies = resolve(pkg.dependencies);
             pkg.devDependencies = resolve(pkg.devDependencies);
-            const resolveWorkspace = (deps) => {
+            const stripWorkspace = (deps) => {
               if (!deps) return deps;
               return Object.fromEntries(
-                Object.entries(deps).map(([k, v]) => [k, v.startsWith('workspace:') ? 'latest' : v])
+                Object.entries(deps).filter(([k]) => !k.startsWith('@workspace/'))
               );
             };
-            pkg.dependencies = resolveWorkspace(pkg.dependencies);
-            pkg.devDependencies = resolveWorkspace(pkg.devDependencies);
+            pkg.dependencies = stripWorkspace(pkg.dependencies);
+            pkg.devDependencies = stripWorkspace(pkg.devDependencies);
             fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2));
-            console.log('catalog: and workspace: references resolved.');
+            console.log('catalog: references resolved, @workspace/* packages removed.');
           "
 
       - name: Remove pnpm workspace config
